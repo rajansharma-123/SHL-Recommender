@@ -4,12 +4,19 @@ from rag.vector_store import load_metadata
 
 
 def _get_index_and_metadata():
-    from rag.embeddings import get_embedding
-    from rag.vector_store import load_faiss_index
 
-    index = load_faiss_index()
-    metadata = load_metadata()
-    return index, metadata, get_embedding
+    from rag.vector_store import (
+        load_faiss_index,
+        load_metadata
+    )
+
+    from rag.embeddings import get_embedding
+
+    return (
+        load_faiss_index(),
+        load_metadata(),
+        get_embedding
+    )
 
 
 def search_assessments(query: str, top_k: int = 10):

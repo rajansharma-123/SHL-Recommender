@@ -93,3 +93,28 @@ def load_metadata():
 
     with open(METADATA_PATH, "rb") as file:
         return pickle.load(file)
+    
+_index = None
+_metadata = None
+
+
+def load_faiss_index():
+
+    global _index
+
+    if _index is None:
+        _index = faiss.read_index(str(INDEX_PATH))
+
+    return _index
+
+
+def load_metadata():
+
+    global _metadata
+
+    if _metadata is None:
+
+        with open(METADATA_PATH, "rb") as file:
+            _metadata = pickle.load(file)
+
+    return _metadata

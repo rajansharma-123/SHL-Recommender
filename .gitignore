@@ -1,5 +1,6 @@
 # Virtual Environment
 venv/
+deployenv/
 
 # Python cache
 __pycache__/
