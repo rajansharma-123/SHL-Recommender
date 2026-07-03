@@ -2,20 +2,20 @@ import json
 import pickle
 from pathlib import Path
 
-import faiss
-import numpy as np
-
-from rag.embeddings import get_embedding
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 # -----------------------------
 # Paths
 # -----------------------------
 
 CATALOG_PATH = Path("data/catalog.json")
-
-INDEX_PATH = Path("data/faiss.index")
-
+VECTORIZER_PATH = Path("data/vectorizer.pkl")
+MATRIX_PATH = Path("data/tfidf_matrix.pkl")
 METADATA_PATH = Path("data/metadata.pkl")
+
+_vectorizer = None
+_matrix = None
+_metadata = None
 
 
 # -----------------------------
@@ -29,10 +29,10 @@ def load_catalog():
 
 
 # -----------------------------
-# Build FAISS Index
+# Build TF-IDF Index
 # -----------------------------
 
-def create_faiss_index():
+def create_index():
 
     catalog = load_catalog()
 
@@ -41,35 +41,27 @@ def create_faiss_index():
     for item in catalog:
 
         text = f"""
-        Name: {item.get("name", "")}
+        {item.get("name", "")}
 
-        Description:
         {item.get("description", "")}
 
-        Skills:
-        {", ".join(item.get("keys", []))}
+        {" ".join(item.get("keys", []))}
 
-        Job Levels:
-        {", ".join(item.get("job_levels", []))}
+        {" ".join(item.get("job_levels", []))}
         """
 
         documents.append(text)
 
-    embeddings = np.array(
-        [get_embedding(doc) for doc in documents],
-        dtype="float32"
-    )
+    vectorizer = TfidfVectorizer(stop_words="english")
 
-    dimension = embeddings.shape[1]
+    matrix = vectorizer.fit_transform(documents)
 
-    index = faiss.IndexFlatL2(dimension)
+    with open(VECTORIZER_PATH, "wb") as file:
+        pickle.dump(vectorizer, file)
 
-    index.add(embeddings)
+    with open(MATRIX_PATH, "wb") as file:
+        pickle.dump(matrix, file)
 
-    # Save FAISS index
-    faiss.write_index(index, str(INDEX_PATH))
-
-    # Save Metadata
     with open(METADATA_PATH, "wb") as file:
         pickle.dump(catalog, file)
 
@@ -77,12 +69,37 @@ def create_faiss_index():
 
 
 # -----------------------------
-# Load FAISS Index
+# Load Vectorizer
 # -----------------------------
 
-def load_faiss_index():
+def load_vectorizer():
 
-    return faiss.read_index(str(INDEX_PATH))
+    global _vectorizer
+
+    if _vectorizer is None:
+
+        with open(VECTORIZER_PATH, "rb") as file:
+
+            _vectorizer = pickle.load(file)
+
+    return _vectorizer
+
+
+# -----------------------------
+# Load Matrix
+# -----------------------------
+
+def load_matrix():
+
+    global _matrix
+
+    if _matrix is None:
+
+        with open(MATRIX_PATH, "rb") as file:
+
+            _matrix = pickle.load(file)
+
+    return _matrix
 
 
 # -----------------------------
@@ -91,30 +108,12 @@ def load_faiss_index():
 
 def load_metadata():
 
-    with open(METADATA_PATH, "rb") as file:
-        return pickle.load(file)
-    
-_index = None
-_metadata = None
-
-
-def load_faiss_index():
-
-    global _index
-
-    if _index is None:
-        _index = faiss.read_index(str(INDEX_PATH))
-
-    return _index
-
-
-def load_metadata():
-
     global _metadata
 
     if _metadata is None:
 
         with open(METADATA_PATH, "rb") as file:
+
             _metadata = pickle.load(file)
 
     return _metadata

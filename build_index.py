@@ -1,7 +1,8 @@
-from rag.vector_store import create_faiss_index
+from rag.vector_store import create_index
 
-total = create_faiss_index()
+total = create_index()
 
-print(f"FAISS Index Created Successfully!")
-
-print(f"Total Assessments Indexed : {total}")
+print("=" * 50)
+print("TF-IDF Index Created Successfully")
+print(f"Total Assessments Indexed: {total}")
+print("=" * 50)

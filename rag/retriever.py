@@ -1,58 +1,50 @@
-import numpy as np
+from sklearn.metrics.pairwise import cosine_similarity
 
-from rag.vector_store import load_metadata
-
-
-def _get_index_and_metadata():
-
-    from rag.vector_store import (
-        load_faiss_index,
-        load_metadata
-    )
-
-    from rag.embeddings import get_embedding
-
-    return (
-        load_faiss_index(),
-        load_metadata(),
-        get_embedding
-    )
+from rag.vector_store import (
+    load_vectorizer,
+    load_matrix,
+    load_metadata
+)
 
 
-def search_assessments(query: str, top_k: int = 10):
-    try:
-        index, metadata, get_embedding = _get_index_and_metadata()
-    except Exception:
-        return []
+def search_assessments(query: str, top_k: int = 5):
 
-    query_embedding = np.array(
-        [get_embedding(query)],
-        dtype="float32"
-    )
+    vectorizer = load_vectorizer()
+    matrix = load_matrix()
+    metadata = load_metadata()
 
-    distances, indices = index.search(
-        query_embedding,
-        top_k
-    )
+    query_vector = vectorizer.transform([query])
+
+    similarities = cosine_similarity(
+        query_vector,
+        matrix
+    )[0]
+
+    ranked = similarities.argsort()[::-1][:top_k]
 
     results = []
 
-    for idx, distance in zip(indices[0], distances[0]):
-        assessment = metadata[idx].copy()
-        assessment["score"] = float(distance)
-        results.append(assessment)
+    for idx in ranked:
+
+        item = metadata[idx].copy()
+
+        item["score"] = float(similarities[idx])
+
+        results.append(item)
 
     return results
 
 
 def find_assessment_by_name(name: str):
-    """Find assessment by partial name."""
 
-    name = name.lower().strip()
     metadata = load_metadata()
 
+    name = name.lower()
+
     for item in metadata:
+
         if name in item["name"].lower():
+
             return item
 
     return None
